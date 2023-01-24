@@ -1,0 +1,53 @@
+--Tema2 ASC Optimizari
+
+In cadrudl temei am avut de implement trei medtoade de calculare a inmultirii a unui set de matrici
+
+C = B *A * At + Bt * B. unde A este o matrice triunghiulara superior, iar B este o matrice obisnuita, ambele de dimensiuni NxN
+
+==============================blas_solver=============================
+Pentru implementarea blas am folosit functia cblas_dgem din biblioteca cblas.h care executa operatia A * B + C si aplica diferite operatii pe matrici.
+
+- pt calcularea B * Bt am apelat cblas_dgem si l-am transpus pe B dupa care rezultatul intr B*Bt l-am adunat la o matrice, C initial plina de zero
+
+-pt calcularea B * A am folosit cblas_dgem si am salvat rezultatul intr-o matrice auxiliara B_A, tot initial plina de zero
+
+-in final pt B * A * At + Bt * B am folosit cblas_dgem pe rezultatul stocat in B_A, am transpus matricea A si am aduncat la rezultatul obtinut in matricea C ( in care va fi rezultatul final )
+
+============================neopt_solver=============================
+- Am cret functii pentru fiecare inmultire facuta intre matrici 
+- pt B * A am facut un loop de 3 bucle cu indexarea lui k ( cea de-a 3 bucla ) de la 0 la j pentru a tine cont de faptul ca A este matrice triunghiulara 
+
+-pt B * A * At am creat 3 bucle cu indexul k de la 0 la N - j pentru a tine cont de triunghiularitatea matricei A, iar pt a executa inmultirea transpusa am apleat elementul j* N + j + k
+
+- in cea de a treia operatie Bt * B am folist o functie care lucreaza cu o singura matrice B si executa o simpla inmultire de matrici, dar incidii prii martrici pe care o ia la inmultire sunt inversatii pentru a lua elementul de pe matricea transpusa
+
+-in functia my_solver am stocat rezultatele in variabile auxilea temp si in final am efectua adunarea intre rezultatele obtinute in matricea C
+
+============================opt_solver==============================
+-pt implementarea variantei optimizate am utilizat varianta neoptimizata si am folosit tehnici precum utilizarea registrilor sau loop unrolling pentru eficientizarea inmultirilor
+
+- am declara variabila N registru in fiecare functie deoarece aceasta este folosita in fiecare dintre cele 3 bucle folosite la inmultiere 
+- am pastrat ordinea buclelor i j k, desi o eventuala optimizare ar fi fost si schimbarea ordinii buclelor dar am obtinut timpi buni si asa 
+- in functiile pt B*A si B*A*At am declara j si k ca registrii deoarece j-ul este folosit si in a treia bucla, spre deosebire de functia pentru Bt *B unde doar k a fost declara ca register int
+
+- pentru functia in care fac loop urrolling practic ii spun procesorului sa verifice conditia de continuare doar din 40 in 40 de pasi
+
+- deoarece nu stiu daca N - j este multiplu de 40, scad 40 din rezultat, iar dupa executarea celor 40 de instructiuni adun 40 la rezultat 
+- de asemenea, la fiecare astfel de verificareprocesorului ii vin datele pe care le compara isi asuma un rezultat al compararii si anticipeaza niste pasi
+- daca a anticipat gresit, atunci n-a facut nimic cat a asteptat, daca a anticipat corect, atunci a castigat timp (ceea ce vrem). Scutind procesorul de comparari l-am scutit de branch-uri si, implicit, de posibile anticipari eronate care ar irosi timp.
+
+- utilizarea de pointeri, la fel cum este specificat si in laboratorul 5 ajuta la accesarea rapida a elementelor din matrici si astfel se castiga iar timp 
+
+
+===============================memory==================================
+-pentru a evita alocarile in functii am transmis totul prin referinta in variabilele auxilire temp in care am stocat rezultatul inmultirilor de matrici 
+
+===============================cache===================================
+-comparativ intre varianta optimizata si cea neoptimizata se vede o diferenta semnificativa la scaderea nr de instructiuni I refs acesta fiind mai mic de aproape 6 ori, datorita utilizarii registrilor
+
+-nr de D miss-uri nu a scazut, posibil de la neordonarea buclelor intr-o formula mai eficienta 
+
+=============================grafice=================================
+- blas-ul scoate cei mai buni timpi si are o crestere aproape exponentiala, in vreme ce varianta neoptimizata are o crestere tot aproape exponentiala si se osberva cum timpul creste semnificativ odata cu cresterea lui N.
+
+- la varianta optimizata se observa un fenomen interesant deoarece cresterea pare ori linirea, ori aproape stagneaza ( fiind diferente foarte mici de timpi intre N = 800 si N = 1000) apoi se observa o crestere brusca timpului 
